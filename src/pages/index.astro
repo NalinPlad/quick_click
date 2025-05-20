@@ -26,6 +26,9 @@ import "../styles/global.css";
 				</div>
 			</div>
 
+			<!-- do not remove -->
+			<!-- <div class="hidden grid-cols-3 grid-cols-4 grid-cols-5 grid-cols-6"/> -->
+
 			<script>
 				const menuButton = document.getElementById('menu-button');
 				const menu = document.getElementById('menu');
@@ -77,6 +80,7 @@ import "../styles/global.css";
 			<div class="w-fit min-w-[150px] h-[300px] bg-white rounded-lg shadow-lg flex flex-col">
 				<div class="bg-indigo-100 p-4 rounded-t-lg">
 					<h2 id="round_time" class="text-xl font-bold text-slate-700">-</h2>
+					<h3 id="pr_time" class="text-sm font-bold text-slate-400">PR: 2.3s</h3>
 				</div>
 				<div class="p-4 overflow-y-scroll" id="time_history"></div>
 			</div>
@@ -91,6 +95,7 @@ const hoverspot = document.getElementById('hoverspot');
 const startText = document.getElementById('start-text');
 const roundTime = document.getElementById('round_time');
 const timeHistory = document.getElementById('time_history');
+const prTime = document.getElementById('pr_time')
 
 let correctPattern = [];
 let playerPattern = [];
@@ -174,6 +179,9 @@ function updateTimeHistory() {
 		
 		timeHistory.appendChild(timeEntry);
 	});
+
+	prTime.textContent = `PR: ${Math.min(...history[gridSize])}s`;
+	
 }
 
 
@@ -208,11 +216,11 @@ function startCountdown() {
 	playerPattern = [];
 
 	let count = 2;
-	startText.textContent = "🟡 🟡";
+	startText.textContent = "🟡 🟢";
 	countdownInterval = setInterval(() => {
 		count--;
 		if (count > 0) {
-			startText.textContent = "🟡 ".repeat(count);
+			startText.textContent = "🟢 ".repeat(count);
 		} else {
 			clearInterval(countdownInterval);
 			startText.textContent = 'Hover the square to start pattern round';
@@ -321,6 +329,7 @@ slider.addEventListener('input', (e) => {
 
 	updateTimeHistory()
 
+	clearInterval(stopwatchInterval);
 	roundTime.innerText = "-";
 });
 
