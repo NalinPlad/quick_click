@@ -180,7 +180,7 @@ function updateTimeHistory() {
 		timeHistory.appendChild(timeEntry);
 	});
 
-	prTime.textContent = `PR: ${Math.min(...history[gridSize])}s`;
+	prTime.textContent = `PR: ${Math.min(...history[gridSize]) ? Math.min(...history[gridSize]) : '-'}s`;
 	
 }
 
