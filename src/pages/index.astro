@@ -21,8 +21,8 @@ import "../styles/global.css";
 					<div class="w-6 h-1 bg-indigo-600 rounded"></div>
 				</button>
 				<div id="menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-50">
-					<a href="#" class="block px-4 py-2 text-gray-700 hover:bg-indigo-100 rounded-t-lg">Delete All Data</a>
-					<a href="#" class="block px-4 py-2 text-gray-700 hover:bg-indigo-100 rounded-b-lg">Restore</a>
+					<a href="#" id="reset-scores" class="block px-4 py-2 text-red-500 font-bold bg-red-200 hover:bg-red-300 transition-all rounded-t-lg">Delete All Data</a>
+					<a href="#" class="block px-4 py-2 text-gray-700 hover:bg-indigo-100 rounded-b-lg transition-all">Restore</a>
 				</div>
 			</div>
 
@@ -34,6 +34,14 @@ import "../styles/global.css";
 					const isExpanded = menuButton.getAttribute('aria-expanded') === 'true';
 					menuButton.setAttribute('aria-expanded', !isExpanded);
 					menu.classList.toggle('hidden');
+				});
+
+				const resetScores = document.getElementById('reset-scores');
+				resetScores.addEventListener('click', (e) => {
+					e.preventDefault();
+					localStorage.removeItem('timeHistory');
+					timeHistory.innerHTML = '';
+					roundTime.innerText = '-';
 				});
 
 				// Close menu when clicking outside
@@ -66,7 +74,7 @@ import "../styles/global.css";
 					<div id="grid" class="w-full h-full grid grid-cols-3 gap-1"></div>
 				</div>
 			</div>
-			<div class="w-fit h-[300px] bg-white rounded-lg shadow-lg flex flex-col">
+			<div class="w-fit min-w-[150px] h-[300px] bg-white rounded-lg shadow-lg flex flex-col">
 				<div class="bg-indigo-100 p-4 rounded-t-lg">
 					<h2 id="round_time" class="text-xl font-bold text-slate-700">-</h2>
 				</div>
@@ -132,6 +140,43 @@ let history = JSON.parse(localStorage.getItem('quickClickHistory')) || {
 	'6': []  // 6x6 grid times
 };
 
+function updateTimeHistory() {
+	// Clear existing entries
+	timeHistory.innerHTML = '';
+
+	// Get current grid size and times
+	const gridSize = parseInt(slider.value) + 2;
+	const times = history[gridSize] || [];
+
+	// Render each time entry
+	times.forEach((time, index) => {
+		const timeEntry = document.createElement('div');
+		
+		// Check if this time is better than all subsequent times (PR)
+		const isPR = !times.slice(index + 1).some(t => parseFloat(t) <= parseFloat(time));
+
+		// Check if its equal to best subsequent time (tied your PR)
+		const isTied = !isPR && times.slice(index + 1).some((t, i) => {
+			const subsequentTimes = times.slice(index + 1 + i + 1);
+			return parseFloat(t) === parseFloat(time) && !subsequentTimes.some(st => parseFloat(st) < parseFloat(t));
+		});
+		
+		if (isPR) {
+			timeEntry.className = 'text-indigo-600 font-bold mb-2';
+			timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-0.5 rounded">${parseFloat(time) === Math.min(...history[gridSize]) ? 'PR 👑' : 'Imp.'}</span>`;
+		} else if (isTied) {
+			timeEntry.className = 'text-yellow-600 font-bold mb-2';
+			timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">=</span>`;
+		} else {
+			timeEntry.className = 'text-slate-700 font-bold mb-2';
+			timeEntry.textContent = `${time}s`;
+		}
+		
+		timeHistory.appendChild(timeEntry);
+	});
+}
+
+
 function addTimeToHistory(seconds) {
 	const gridSize = parseInt(slider.value) + 2;
 	
@@ -142,27 +187,11 @@ function addTimeToHistory(seconds) {
 	localStorage.setItem('quickClickHistory', JSON.stringify(history));
 
 	// Update display
-	const timeEntry = document.createElement('div');
-	if (!history[gridSize].slice(1).some(time => parseFloat(time) <= parseFloat(seconds))) {
-		// It's a PR
-		timeEntry.className = 'text-indigo-600 font-bold mb-2';
-		timeEntry.innerHTML = `${seconds}s <span class="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-0.5 rounded">PR 👑</span>`;
-	} else {
-		timeEntry.className = 'text-slate-700 font-bold mb-2';
-		timeEntry.textContent = `${seconds}s`;
-	}
-	timeHistory.insertBefore(timeEntry, timeHistory.firstChild);
+	updateTimeHistory();
 }
 
-// Render existing times from history for current grid size
-const currentGridSize = parseInt(slider.value) + 2;
-const currentTimes = history[currentGridSize] || [];
-currentTimes.forEach(time => {
-	const timeEntry = document.createElement('div');
-	timeEntry.className = 'text-slate-700 font-bold mb-2';
-	timeEntry.textContent = `${time}s`;
-	timeHistory.appendChild(timeEntry);
-});
+
+updateTimeHistory();
 
 
 function startCountdown() {
@@ -290,15 +319,7 @@ slider.addEventListener('input', (e) => {
 	correctPattern = [];
 	playerPattern = [];
 
-	// Update time history display for selected grid size
-	timeHistory.innerHTML = '';
-	const times = history[size] || [];
-	times.forEach(time => {
-		const timeEntry = document.createElement('div');
-		timeEntry.className = 'text-slate-700 font-bold mb-2';
-		timeEntry.textContent = `${time}s`;
-		timeHistory.appendChild(timeEntry);
-	});
+	updateTimeHistory()
 
 	roundTime.innerText = "-";
 });
