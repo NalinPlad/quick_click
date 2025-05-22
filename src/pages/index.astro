@@ -11,11 +11,12 @@ import "../styles/global.css";
 		<title>Quick Click</title>
 		<script data-goatcounter="https://ajith.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js" client:load></script>
 	</head>
 	<body class="flex flex-col items-center p-8 gap-8">
 		<div>
 			<div class="flex items-center gap-4">
-				<h1 class="text-indigo-600 text-5xl font-serif font-bold p-4">Quick <span class="text-blue-600">Click</span></h1>
+				<h1 class="text-indigo-600 text-5xl font-serif font-bold ">Quick <span class="text-blue-600">Click</span></h1>
 				
 				<div class="relative">
 					<button id="menu-button" class="p-2 hover:bg-indigo-100 rounded-lg shadow-2xl" aria-label="Menu" aria-expanded="false">
@@ -93,6 +94,13 @@ import "../styles/global.css";
 				<div class="p-4 overflow-y-scroll" id="time_history"></div>
 			</div>
 		</div>
+
+		<div>
+			<canvas id="linechart"></canvas>
+		</div>
+		<div>
+			<canvas id="histogram"></canvas>
+		</div>
 	</body>
 </html>
 
@@ -153,6 +161,10 @@ let history = JSON.parse(localStorage.getItem('quickClickHistory')) || {
 	'6': []  // 6x6 grid times
 };
 
+const linechart = document.getElementById('linechart');
+const histogram = document.getElementById('histogram');
+
+
 function updateTimeHistory() {
 	// Clear existing entries
 	timeHistory.innerHTML = '';
@@ -198,6 +210,150 @@ function updateTimeHistory() {
 
 	prTime.textContent = `PR: ${PR != Infinity ? PR + 's' : '-'}`;
 	
+	// Update line chart with the last 10 times
+	updateLineChart();
+	updateHistogram();
+}
+
+// Function to update histogram chart
+function updateHistogram() {
+	const gridSize = parseInt(slider.value) + 2;
+	const times = history[gridSize] || [];
+
+	if (times.length === 0) return;
+
+	// Remove outliers (times > Q3 + 1.5 * IQR)
+	const sortedTimes = [...times].sort((a,b) => a - b);
+	const q1 = sortedTimes[Math.floor(sortedTimes.length * 0.25)];
+	const q3 = sortedTimes[Math.floor(sortedTimes.length * 0.75)];
+	const iqr = q3 - q1;
+	const upperLimit = q3 + (1.5 * iqr);
+	
+	const filteredTimes = times.filter(t => t <= upperLimit);
+
+	// Create 20 bins
+	const min = Math.min(...filteredTimes);
+	const max = Math.max(...filteredTimes);
+	const binWidth = (max - min) / 20;
+	const bins = Array(20).fill(0);
+
+	// Count frequencies
+	filteredTimes.forEach(time => {
+		const binIndex = Math.min(Math.floor((time - min) / binWidth), 19);
+		bins[binIndex]++;
+	});
+
+	const ctx = document.getElementById('histogram').getContext('2d');
+
+	// Create or update histogram
+	if (!window.histogramChart) {
+		window.histogramChart = new Chart(ctx, {
+			type: 'bar',
+			data: {
+				labels: bins.map((_, i) => (min + (i * binWidth)).toFixed(2)),
+				datasets: [{
+					data: bins,
+					backgroundColor: 'rgba(79, 70, 229, 0.5)',
+					borderColor: 'rgb(79, 70, 229)',
+					borderWidth: 1
+				}]
+			},
+			options: {
+				responsive: true,
+				aspectRatio: 4,
+				plugins: {
+					legend: {
+						display: false
+					}
+				},
+				scales: {
+					y: {
+						beginAtZero: true,
+						title: {
+							display: true,
+							text: 'Frequency'
+						},
+						grid: {
+							display: false
+						}
+					},
+					x: {
+						grid: {
+							display: false
+						},
+						ticks: {
+							display: false
+						}
+					}
+				}
+			}
+		});
+	} else {
+		window.histogramChart.data.labels = bins.map((_, i) => (min + (i * binWidth)).toFixed(2));
+		window.histogramChart.data.datasets[0].data = bins;
+		window.histogramChart.update('quiet');
+	}
+}
+
+
+// New function to update the line chart
+function updateLineChart() {
+	const gridSize = parseInt(slider.value) + 2;
+	const times = history[gridSize] || [];
+	const last10Times = times.slice(0, 10).reverse(); // Get last 10 times in reverse order
+
+	const ctx = document.getElementById('linechart').getContext('2d');
+	
+	// Create chart if it doesn't exist
+	if (!window.lineChart) {
+		window.lineChart = new Chart(ctx, {
+			type: 'line',
+			data: {
+				labels: last10Times.map((_, index) => ``),
+				datasets: [{
+					label: ``,
+					data: last10Times,
+					borderColor: 'rgb(79, 70, 229)',
+					tension: 0.1
+				}]
+			},
+			options: {
+				responsive: true,
+				aspectRatio: 4, // Makes the chart half as tall
+				plugins: {
+					legend: {
+						display: false
+					}
+				},
+				scales: {
+					y: {
+						// beginAtZero: true,
+						title: {
+							display: true,
+							text: 'Time'
+						},
+						grid: {
+							display: false
+						},
+						ticks: {
+							display: false
+						}
+					},
+					x: {
+						grid: {
+							display: false
+						}
+					}
+				}
+			}
+		});
+	} else {
+		// Update existing chart
+		window.lineChart.data.labels = last10Times.map((_, index) => ``);
+		window.lineChart.data.datasets[0].data = last10Times;
+		window.lineChart.data.datasets[0].label = ``;
+		window.lineChart.update('quiet');
+	}
 }
 
 
