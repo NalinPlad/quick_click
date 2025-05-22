@@ -161,7 +161,11 @@ function updateTimeHistory() {
 	const gridSize = parseInt(slider.value) + 2;
 	const times = history[gridSize] || [];
 
+	
 	// Render each time entry
+
+	const PR = Math.min(...history[gridSize]);
+
 	times.forEach((time, index) => {
 		const timeEntry = document.createElement('div');
 		
@@ -169,10 +173,10 @@ function updateTimeHistory() {
 		const isPR = !times.slice(index + 1).some(t => parseFloat(t) <= parseFloat(time));
 
 		// Check if its equal to best subsequent time (tied your PR)
-		const isTied = !isPR && times.slice(index + 1).some((t, i) => {
-			const subsequentTimes = times.slice(index + 1 + i + 1);
-			return parseFloat(t) === parseFloat(time) && !subsequentTimes.some(st => parseFloat(st) < parseFloat(t));
-		});
+		// const isTied = times.slice(index + 1).some(t => parseFloat(t) === parseFloat(time));
+		const isTied = false; 
+
+		const isWithin10Percent = parseFloat(time) <= PR * 1.1;
 		
 		if (isPR) {
 			timeEntry.className = 'text-indigo-600 font-bold mb-2';
@@ -180,6 +184,10 @@ function updateTimeHistory() {
 		} else if (isTied) {
 			timeEntry.className = 'text-yellow-600 font-bold mb-2';
 			timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">=</span>`;
+		} else if (isWithin10Percent) {
+			const diff = (parseFloat(time) - PR).toFixed(2);
+			timeEntry.className = 'text-yellow-600 font-bold mb-2';
+			timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">${PR != Infinity ? '+'+diff : ''}</span>`;
 		} else {
 			timeEntry.className = 'text-slate-700 font-bold mb-2';
 			timeEntry.textContent = `${time}s`;
@@ -188,7 +196,7 @@ function updateTimeHistory() {
 		timeHistory.appendChild(timeEntry);
 	});
 
-	prTime.textContent = `PR: ${Math.min(...history[gridSize]) != Infinity ? Math.min(...history[gridSize]) + 's' : '-'}`;
+	prTime.textContent = `PR: ${PR != Infinity ? PR + 's' : '-'}`;
 	
 }
 
