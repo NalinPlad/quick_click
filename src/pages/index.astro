@@ -191,8 +191,13 @@ function updateTimeHistory() {
 		const isWithin10Percent = parseFloat(time) <= PR * 1.1;
 		
 		if (isPR) {
-			timeEntry.className = 'text-indigo-600 font-bold mb-2';
-			timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-0.5 rounded">${parseFloat(time) === Math.min(...history[gridSize]) ? 'PR 👑' : 'Imp.'}</span>`;
+			if(parseFloat(time) === Math.min(...history[gridSize])) {
+				timeEntry.className = 'text-green-600 font-bold mb-2';
+				timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-green-100 text-green-800 px-2 py-0.5 rounded">PR 👑</span>`;
+			} else {
+				timeEntry.className = 'text-blue-600 font-bold mb-2';
+				timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Imp.</span>`;
+			}
 		} else if (isTied) {
 			timeEntry.className = 'text-yellow-600 font-bold mb-2';
 			timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">=</span>`;
@@ -231,15 +236,18 @@ function updateHistogram() {
 	
 	const filteredTimes = times.filter(t => t <= upperLimit);
 
-	// Create 20 bins
+	// Calculate optimal number of bins using Sturges' formula
+	const numBins = Math.min((filteredTimes.length), 20);
+
+	// Create bins
 	const min = Math.min(...filteredTimes);
 	const max = Math.max(...filteredTimes);
-	const binWidth = (max - min) / 20;
-	const bins = Array(20).fill(0);
+	const binWidth = (max - min) / numBins;
+	const bins = Array(numBins).fill(0);
 
 	// Count frequencies
 	filteredTimes.forEach(time => {
-		const binIndex = Math.min(Math.floor((time - min) / binWidth), 19);
+		const binIndex = Math.min(Math.floor((time - min) / binWidth), numBins - 1);
 		bins[binIndex]++;
 	});
 
