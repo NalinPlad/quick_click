@@ -9,15 +9,13 @@ import "../styles/global.css";
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
 		<title>Quick Click</title>
-		<script data-goatcounter="https://ajith.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
+		<script data-goatcounter="https://ajith.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/chart.js" client:load></script>
 	</head>
 	<body class="flex flex-col items-center p-8 gap-8">
 		<div>
 			<div class="flex items-center gap-4">
-				<h1 class="text-indigo-600 text-5xl font-serif font-bold ">Quick <span class="text-blue-600">Click</span></h1>
-				
+				<h1 class="text-indigo-600 text-5xl font-serif font-bold">Quick <span class="text-blue-600">Click</span></h1>
 				<div class="relative">
 					<button id="menu-button" class="p-2 hover:bg-indigo-100 rounded-lg shadow-2xl" aria-label="Menu" aria-expanded="false">
 						<div class="w-6 h-1 bg-indigo-600 mb-1 rounded"></div>
@@ -29,21 +27,16 @@ import "../styles/global.css";
 						<a href="#" class="block px-4 py-2 text-gray-700 hover:bg-indigo-100 rounded-b-lg transition-all">Restore</a>
 					</div>
 				</div>
-	
-	
 				<!-- do not remove -->
 				<!-- <div class="hidden grid-cols-3 grid-cols-4 grid-cols-5 grid-cols-6"/> -->
-	
 				<script>
 					const menuButton = document.getElementById('menu-button');
 					const menu = document.getElementById('menu');
-	
 					menuButton.addEventListener('click', () => {
 						const isExpanded = menuButton.getAttribute('aria-expanded') === 'true';
 						menuButton.setAttribute('aria-expanded', !isExpanded);
 						menu.classList.toggle('hidden');
 					});
-	
 					const resetScores = document.getElementById('reset-scores');
 					resetScores.addEventListener('click', (e) => {
 						e.preventDefault();
@@ -51,8 +44,6 @@ import "../styles/global.css";
 						timeHistory.innerHTML = '';
 						roundTime.innerText = '-';
 					});
-	
-					// Close menu when clicking outside
 					document.addEventListener('click', (event) => {
 						if (!menuButton.contains(event.target) && !menu.contains(event.target)) {
 							menuButton.setAttribute('aria-expanded', 'false');
@@ -60,12 +51,9 @@ import "../styles/global.css";
 						}
 					});
 				</script>
-	
 			</div>
 			<h2 class="text-blue-600 text-2xl font-serif font-bold text-center opacity-75">by <a href="https://github.com/NalinPlad" class="text-indigo-600">notmysql</a></h2>
 		</div>
-		
-		
 		<div class="w-64">
 			<label for="level-select" class="block text-gray-700 font-bold mb-2 text-center">Select Level</label>
 			<input id="level-select" type="range" min="1" max="4" value="1" class="w-full h-2 bg-indigo-600 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-indigo-600 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:appearance-none [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-4 [&::-moz-range-thumb]:border-indigo-600 [&::-moz-range-thumb]:rounded-full">
@@ -76,10 +64,8 @@ import "../styles/global.css";
 				<span>6x6</span>
 			</div>
 		</div>
-
 		<div class="flex items-center gap-8">
 			<div id="hoverspot" class="w-16 h-16 bg-white border-4 border-indigo-200 hover:border-indigo-600 rounded-lg cursor-pointer transition-colors duration-200 flex items-center justify-center opacity-75 hover:opacity-100"><p>🙈</p></div>
-			
 			<div class="relative">
 				<p id="start-text" class="absolute font-bold inset-0 flex items-center justify-center bg-white/80 text-xl text-slate-600 rounded-lg z-10 text-center p-5">Hover the square to start pattern round</p>
 				<div id="grid-container" class="w-[300px] h-[300px] bg-white rounded-lg shadow-lg p-4">
@@ -94,7 +80,6 @@ import "../styles/global.css";
 				<div class="p-4 overflow-y-scroll" id="time_history"></div>
 			</div>
 		</div>
-
 		<div>
 			<canvas id="linechart"></canvas>
 		</div>
@@ -111,7 +96,7 @@ const hoverspot = document.getElementById('hoverspot');
 const startText = document.getElementById('start-text');
 const roundTime = document.getElementById('round_time');
 const timeHistory = document.getElementById('time_history');
-const prTime = document.getElementById('pr_time')
+const prTime = document.getElementById('pr_time');
 
 let correctPattern = [];
 let playerPattern = [];
@@ -161,37 +146,34 @@ let history = JSON.parse(localStorage.getItem('quickClickHistory')) || {
 	'6': []  // 6x6 grid times
 };
 
+// Migrate legacy data if needed
+Object.keys(history).forEach(gridSize => {
+	if (history[gridSize].length > 0 && typeof history[gridSize][0] !== 'object') {
+		history[gridSize] = history[gridSize].map(time => ({
+			time: parseFloat(time),
+			pattern: []
+		}));
+	}
+});
+
 const linechart = document.getElementById('linechart');
 const histogram = document.getElementById('histogram');
 
-
 function updateTimeHistory() {
-	// Clear existing entries
 	timeHistory.innerHTML = '';
-
-	// Get current grid size and times
 	const gridSize = parseInt(slider.value) + 2;
 	const times = history[gridSize] || [];
+	const PR = Math.min(...times.map(t => t.time || t));
 
-	
-	// Render each time entry
-
-	const PR = Math.min(...history[gridSize]);
-
-	times.forEach((time, index) => {
+	times.forEach((entry, index) => {
+		const time = typeof entry === 'object' ? entry.time : entry;
 		const timeEntry = document.createElement('div');
-		
-		// Check if this time is better than all subsequent times (PR)
-		const isPR = !times.slice(index + 1).some(t => parseFloat(t) <= parseFloat(time));
-
-		// Check if its equal to best subsequent time (tied your PR)
-		// const isTied = times.slice(index + 1).some(t => parseFloat(t) === parseFloat(time));
-		const isTied = false; 
-
-		const isWithin10Percent = parseFloat(time) <= PR * 1.1;
+		const isPR = !times.slice(index + 1).some(t => (t.time || t) <= time);
+		const isTied = false;
+		const isWithin10Percent = time <= PR * 1.1;
 		
 		if (isPR) {
-			if(parseFloat(time) === Math.min(...history[gridSize])) {
+			if(time === Math.min(...times.map(t => t.time || t))) {
 				timeEntry.className = 'text-green-600 font-bold mb-2';
 				timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-green-100 text-green-800 px-2 py-0.5 rounded">PR 👑</span>`;
 			} else {
@@ -202,58 +184,44 @@ function updateTimeHistory() {
 			timeEntry.className = 'text-yellow-600 font-bold mb-2';
 			timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">=</span>`;
 		} else if (isWithin10Percent) {
-			const diff = (parseFloat(time) - PR).toFixed(2);
+			const diff = (time - PR).toFixed(2);
 			timeEntry.className = 'text-yellow-600 font-bold mb-2';
 			timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">${PR != Infinity ? '+'+diff : ''}</span>`;
 		} else {
 			timeEntry.className = 'text-slate-700 font-bold mb-2';
 			timeEntry.textContent = `${time}s`;
 		}
-		
 		timeHistory.appendChild(timeEntry);
 	});
 
 	prTime.textContent = `PR: ${PR != Infinity ? PR + 's' : '-'}`;
-	
-	// Update line chart with the last 10 times
 	updateLineChart();
 	updateHistogram();
 }
 
-// Function to update histogram chart
 function updateHistogram() {
 	const gridSize = parseInt(slider.value) + 2;
 	const times = history[gridSize] || [];
-
 	if (times.length === 0) return;
 
-	// Remove outliers (times > Q3 + 1.5 * IQR)
-	const sortedTimes = [...times].sort((a,b) => a - b);
+	const sortedTimes = [...times].map(t => t.time || t).sort((a,b) => a - b);
 	const q1 = sortedTimes[Math.floor(sortedTimes.length * 0.25)];
 	const q3 = sortedTimes[Math.floor(sortedTimes.length * 0.75)];
 	const iqr = q3 - q1;
 	const upperLimit = q3 + (1.5 * iqr);
-	
-	const filteredTimes = times.filter(t => t <= upperLimit);
-
-	// Calculate optimal number of bins using Sturges' formula
-	const numBins = Math.min((filteredTimes.length), 20);
-
-	// Create bins
+	const filteredTimes = times.map(t => t.time || t).filter(t => t <= upperLimit);
+	const numBins = Math.min(filteredTimes.length, 20);
 	const min = Math.min(...filteredTimes);
 	const max = Math.max(...filteredTimes);
 	const binWidth = (max - min) / numBins;
 	const bins = Array(numBins).fill(0);
 
-	// Count frequencies
 	filteredTimes.forEach(time => {
 		const binIndex = Math.min(Math.floor((time - min) / binWidth), numBins - 1);
 		bins[binIndex]++;
 	});
 
 	const ctx = document.getElementById('histogram').getContext('2d');
-
-	// Create or update histogram
 	if (!window.histogramChart) {
 		window.histogramChart = new Chart(ctx, {
 			type: 'bar',
@@ -303,16 +271,12 @@ function updateHistogram() {
 	}
 }
 
-
-// New function to update the line chart
 function updateLineChart() {
 	const gridSize = parseInt(slider.value) + 2;
 	const times = history[gridSize] || [];
-	const last10Times = times.slice(0, 10).reverse(); // Get last 10 times in reverse order
-
+	const last10Times = times.slice(0, 10).reverse().map(t => t.time || t);
 	const ctx = document.getElementById('linechart').getContext('2d');
 	
-	// Create chart if it doesn't exist
 	if (!window.lineChart) {
 		window.lineChart = new Chart(ctx, {
 			type: 'line',
@@ -327,7 +291,7 @@ function updateLineChart() {
 			},
 			options: {
 				responsive: true,
-				aspectRatio: 4, // Makes the chart half as tall
+				aspectRatio: 4,
 				plugins: {
 					legend: {
 						display: false
@@ -335,7 +299,6 @@ function updateLineChart() {
 				},
 				scales: {
 					y: {
-						// beginAtZero: true,
 						title: {
 							display: true,
 							text: 'Time'
@@ -356,7 +319,6 @@ function updateLineChart() {
 			}
 		});
 	} else {
-		// Update existing chart
 		window.lineChart.data.labels = last10Times.map((_, index) => ``);
 		window.lineChart.data.datasets[0].data = last10Times;
 		window.lineChart.data.datasets[0].label = ``;
@@ -364,26 +326,19 @@ function updateLineChart() {
 	}
 }
 
-
 function addTimeToHistory(seconds) {
 	const gridSize = parseInt(slider.value) + 2;
-	
-	// Add to history object
-	history[gridSize].unshift(seconds);
-	
-	// Save to localStorage
+	history[gridSize].unshift({
+		time: parseFloat(seconds),
+		pattern: [...correctPattern]
+	});
 	localStorage.setItem('quickClickHistory', JSON.stringify(history));
-
-	// Update display
 	updateTimeHistory();
 }
 
-
 updateTimeHistory();
 
-
 function startCountdown() {
-
 	clearInterval(stopwatchInterval);
 	const cells = Array.from(grid.children);
 	cells.forEach(cell => {
@@ -478,9 +433,6 @@ function showStartText() {
 	startText.style.display = '';
 }
 
-
-
-
 function checkWinCondition() {
 	if (correctPattern.length === 0) return;
 
@@ -491,7 +443,7 @@ function checkWinCondition() {
 		const finalTime = stopStopwatch();
 		addTimeToHistory(finalTime);
 		cellsSelectable = false;
-		showStartText()
+		showStartText();
 		playerPattern = [];
 	}
 }
@@ -506,16 +458,13 @@ slider.addEventListener('input', (e) => {
 	cellsSelectable = false;
 	correctPattern = [];
 	playerPattern = [];
-
-	updateTimeHistory()
-
+	updateTimeHistory();
 	clearInterval(stopwatchInterval);
 	roundTime.innerText = "-";
 });
 
 hoverspot.addEventListener('mouseenter', () => {
 	showStartText();
-
 	startCountdown();
 });
 
