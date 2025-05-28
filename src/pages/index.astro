@@ -67,7 +67,7 @@ import "../styles/global.css";
 		<div class="flex items-center gap-8">
 			<div id="hoverspot" class="w-16 h-16 bg-white border-4 border-indigo-200 hover:border-indigo-600 rounded-lg cursor-pointer transition-colors duration-200 flex items-center justify-center opacity-75 hover:opacity-100"><p>🙈</p></div>
 			<div class="relative">
-				<p id="start-text" class="absolute font-bold inset-0 flex items-center justify-center bg-white/80 text-xl text-slate-600 rounded-lg z-10 text-center p-5">Hover the square to start pattern round</p>
+				<p id="start-text" class="absolute font-bold inset-0 flex items-center justify-center bg-white/80 text-xl text-slate-600 rounded-lg z-10 text-center p-5">Hover the 🙈 square to start pattern round</p>
 				<div id="grid-container" class="w-[300px] h-[300px] bg-white rounded-lg shadow-lg p-4">
 					<div id="grid" class="w-full h-full grid grid-cols-3 gap-1"></div>
 				</div>
@@ -104,6 +104,7 @@ let cellsSelectable = false;
 let stopwatchInterval;
 let startTime;
 let countdownInterval;
+let roundStartText = document.getElementById('start-text').textContent;
 
 const baseCellBg = 'bg-indigo-100';
 const revealedPatternCellBg = 'bg-indigo-500';
@@ -191,7 +192,37 @@ function updateTimeHistory() {
 			timeEntry.className = 'text-slate-700 font-bold mb-2';
 			timeEntry.textContent = `${time}s`;
 		}
+
+		timeEntry.innerHTML += `<span class="ml-1 text-sm text-slate-300 hover:text-slate-700 transition-all cursor-pointer hover:scale-110 px-2 py-0.5 rounded">⠟</span>`;
 		timeHistory.appendChild(timeEntry);
+
+		const patternBtn = timeEntry.querySelector('span:last-child');
+		if (entry.pattern && entry.pattern.length > 0) {
+			const popup = document.createElement('div');
+			popup.className = 'hidden absolute bg-white p-2 rounded shadow-lg';
+			popup.style.transform = 'translate(-50%, -100%)';
+			popup.style.left = '50%';
+			popup.style.top = '-8px';
+			
+			const grid = document.createElement('div');
+			grid.className = `grid grid-cols-${gridSize} gap-1`;
+			grid.style.width = '120px';
+			
+			for (let i = 0; i < gridSize * gridSize; i++) {
+				const cell = document.createElement('div');
+				cell.className = 'aspect-square bg-slate-100 rounded';
+				if (entry.pattern.includes(i)) {
+					cell.className += ' bg-indigo-500';
+				}
+				grid.appendChild(cell);
+			}
+			
+			popup.appendChild(grid);
+			patternBtn.appendChild(popup);
+			
+			patternBtn.addEventListener('mouseenter', () => popup.classList.remove('hidden'));
+			patternBtn.addEventListener('mouseleave', () => popup.classList.add('hidden'));
+		}
 	});
 
 	prTime.textContent = `PR: ${PR != Infinity ? PR + 's' : '-'}`;
@@ -351,14 +382,14 @@ function startCountdown() {
 	playerPattern = [];
 
 	let count = 2;
-	startText.textContent = "🟡 🟢";
+	startText.textContent = "Ready?";
 	countdownInterval = setInterval(() => {
 		count--;
 		if (count > 0) {
-			startText.textContent = "🟢 ".repeat(count);
+			startText.textContent = "Set. ".repeat(count);
 		} else {
 			clearInterval(countdownInterval);
-			startText.textContent = 'Hover the square to start pattern round';
+			startText.textContent = roundStartText;
 			showPattern();
 		}
 	}, 1000);
@@ -470,7 +501,7 @@ hoverspot.addEventListener('mouseenter', () => {
 
 hoverspot.addEventListener('mouseleave', () => {
 	clearInterval(countdownInterval);
-	startText.textContent = 'Hover the square to start pattern round';
+	startText.textContent = roundStartText;
 	hidePatternAndAllowPlay();
 });
 
