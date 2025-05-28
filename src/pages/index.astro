@@ -369,7 +369,7 @@ function updateLineChart() {
 						tension: 0.1
 					},
 					{
-						label: `Read Time`,
+						label: `View Time`,
 						data: last10ReactionTimes,
 						borderColor: 'rgb(85, 157, 250)',
 						tension: 0.1
@@ -409,8 +409,8 @@ function updateLineChart() {
 		window.lineChart.data.labels = last10Times.map((_, index) => ``);
 		window.lineChart.data.datasets[0].data = last10Times;
 		window.lineChart.data.datasets[1].data = last10ReactionTimes;
-		window.lineChart.data.datasets[0].label = ``;
-		window.lineChart.data.datasets[1].label = ``;
+		window.lineChart.data.datasets[0].label = `Total Time`;
+		window.lineChart.data.datasets[1].label = `View Time`;
 
 		window.lineChart.update('quiet');
 	}
