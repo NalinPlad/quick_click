@@ -77,7 +77,7 @@ import "../styles/global.css";
 					<h2 id="round_time" class="text-xl font-bold text-slate-700">-</h2>
 					<h3 id="pr_time" class="text-sm font-bold text-slate-400">PR: -</h3>
 				</div>
-				<div class="p-4 overflow-y-scroll" id="time_history"></div>
+				<div class="p-2 overflow-y-scroll" id="time_history"></div>
 			</div>
 		</div>
 		<div>
@@ -105,6 +105,7 @@ let stopwatchInterval;
 let startTime;
 let countdownInterval;
 let roundStartText = document.getElementById('start-text').textContent;
+let patternStartTime;
 
 const baseCellBg = 'bg-indigo-100';
 const revealedPatternCellBg = 'bg-indigo-500';
@@ -193,7 +194,7 @@ function updateTimeHistory() {
 			timeEntry.textContent = `${time}s`;
 		}
 
-		timeEntry.innerHTML += `<span class="ml-1 text-sm text-slate-300 hover:text-slate-700 transition-all cursor-pointer hover:scale-110 px-2 py-0.5 rounded">⠟</span>`;
+		timeEntry.innerHTML = `<span class="p-0 text-sm text-slate-300 hover:text-slate-700 transition-all cursor-pointer hover:scale-110 px-2 py-0.5 rounded">⠟</span>` + timeEntry.innerHTML;
 		timeHistory.appendChild(timeEntry);
 
 		const patternBtn = timeEntry.querySelector('span:last-child');
@@ -306,6 +307,8 @@ function updateLineChart() {
 	const gridSize = parseInt(slider.value) + 2;
 	const times = history[gridSize] || [];
 	const last10Times = times.slice(0, 10).reverse().map(t => t.time || t);
+	const last10ReactionTimes = times.slice(0, 10).reverse().map(t => (t.patternViewTime || 0));
+	
 	const ctx = document.getElementById('linechart').getContext('2d');
 	
 	if (!window.lineChart) {
@@ -313,12 +316,20 @@ function updateLineChart() {
 			type: 'line',
 			data: {
 				labels: last10Times.map((_, index) => ``),
-				datasets: [{
-					label: ``,
-					data: last10Times,
-					borderColor: 'rgb(79, 70, 229)',
-					tension: 0.1
-				}]
+				datasets: [
+					{
+						label: `Total Time`,
+						data: last10Times,
+						borderColor: 'rgb(79, 70, 229)',
+						tension: 0.1
+					},
+					{
+						label: `Read Time`,
+						data: last10ReactionTimes,
+						borderColor: 'rgb(85, 157, 250)',
+						tension: 0.1
+					}
+				]
 			},
 			options: {
 				responsive: true,
@@ -352,7 +363,10 @@ function updateLineChart() {
 	} else {
 		window.lineChart.data.labels = last10Times.map((_, index) => ``);
 		window.lineChart.data.datasets[0].data = last10Times;
+		window.lineChart.data.datasets[1].data = last10ReactionTimes;
 		window.lineChart.data.datasets[0].label = ``;
+		window.lineChart.data.datasets[1].label = ``;
+
 		window.lineChart.update('quiet');
 	}
 }
@@ -361,7 +375,8 @@ function addTimeToHistory(seconds) {
 	const gridSize = parseInt(slider.value) + 2;
 	history[gridSize].unshift({
 		time: parseFloat(seconds),
-		pattern: [...correctPattern]
+		pattern: [...correctPattern],
+		patternViewTime: (window.patternViewTime || 0).toFixed(2)
 	});
 	localStorage.setItem('quickClickHistory', JSON.stringify(history));
 	updateTimeHistory();
@@ -401,6 +416,7 @@ function showPattern() {
 	playerPattern = [];
 	cellsSelectable = false;
 	startStopwatch();
+	patternStartTime = Date.now();
 
 	const cells = Array.from(grid.children);
 	cells.forEach(cell => {
@@ -503,6 +519,8 @@ hoverspot.addEventListener('mouseleave', () => {
 	clearInterval(countdownInterval);
 	startText.textContent = roundStartText;
 	hidePatternAndAllowPlay();
+	const patternViewTime = (Date.now() - patternStartTime) / 1000;
+	window.patternViewTime = patternViewTime;
 });
 
 grid.addEventListener('click', handleCellClick);
