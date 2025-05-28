@@ -24,7 +24,8 @@ import "../styles/global.css";
 					</button>
 					<div id="menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-50">
 						<a href="#" id="reset-scores" class="block px-4 py-2 text-red-500 font-bold bg-red-200 hover:bg-red-300 transition-all rounded-t-lg">Delete All Data</a>
-						<a href="#" class="block px-4 py-2 text-gray-700 hover:bg-indigo-100 transition-all">Restore</a>
+						<a id="export-data" href="#" class="block px-4 py-2 text-gray-700 hover:bg-indigo-100 transition-all">Export data</a>
+						<a id="import-data" href="#" class="block px-4 py-2 text-gray-700 hover:bg-indigo-100 transition-all">Import data</a>
 						<a href="#" class="block px-4 py-2 italic text-sm">This is <b>beta</b>. Expect breaking changes</a>
 					</div>
 				</div>
@@ -77,6 +78,10 @@ import "../styles/global.css";
 				<div class="bg-indigo-100 p-4 rounded-t-lg">
 					<h2 id="round_time" class="text-xl font-bold text-slate-700">-</h2>
 					<h3 id="pr_time" class="text-sm font-bold text-slate-400">PR: -</h3>
+					<div class="flex gap-x-1">
+						<div class="mt-1"><span id="tt-toggle" class="bg-indigo-200 p-1 rounded-md cursor-pointer hover:bg-indigo-200 hover:border-indigo-300 hover:border-2 transition-all hover:p-2 font-bold text-slate-500 text-xs">TT 𝍌</span></div>
+						<div class="mt-1"><span id="vt-toggle" class="bg-indigo-200 p-1 rounded-md cursor-pointer hover:bg-indigo-200 hover:border-indigo-300 hover:border-2 transition-all hover:p-2 font-bold text-slate-500 text-xs">VT ◎</span></div>
+					</div>
 				</div>
 				<div class="p-2 overflow-y-scroll" id="time_history"></div>
 			</div>
@@ -91,6 +96,8 @@ import "../styles/global.css";
 </html>
 
 <script>
+import LZMA from 'lzma-web'
+
 const slider = document.getElementById('level-select');
 const grid = document.getElementById('grid');
 const hoverspot = document.getElementById('hoverspot');
@@ -98,6 +105,50 @@ const startText = document.getElementById('start-text');
 const roundTime = document.getElementById('round_time');
 const timeHistory = document.getElementById('time_history');
 const prTime = document.getElementById('pr_time');
+const exportData = document.getElementById('export-data');
+const importData = document.getElementById('import-data');
+
+const lzma = new LZMA();
+
+exportData.addEventListener('click', () => {
+	const data = localStorage.getItem('quickClickHistory');
+	lzma.compress(data).then(compressed => {
+		const str_spaces = compressed.join(' ');
+		const str_spaces_b64 = btoa(str_spaces);
+		console.log(str_spaces_b64);
+		alert("copied to clipboard and printed to console");
+		// copy to clipboard
+		navigator.clipboard.writeText(str_spaces_b64);
+	});
+});
+
+importData.addEventListener('click', () => {
+	const input = prompt('Enter the data to import');
+	const str_spaces = atob(input);
+	const compressed = str_spaces.split(' ').map(Number);
+	lzma.decompress(compressed).then(decompressed => {
+		// const obj = JSON.parse(decompressed);
+		// console.log(obj)
+		localStorage.setItem('quickClickHistory', decompressed);
+		// console.log(localStorage.getItem('quickClickHistory'));
+		updateTimeHistory();
+
+		window.location.reload();
+	});
+});
+
+const ttToggle = document.getElementById('tt-toggle');
+const vtToggle = document.getElementById('vt-toggle');
+
+ttToggle.addEventListener('click', () => {
+	ttToggle.innerHTML = ttToggle.innerHTML === 'TT 𝍌' ? 'TT ↓' : 'TT 𝍌';
+	updateTimeHistory();
+});
+
+vtToggle.addEventListener('click', () => {
+	vtToggle.innerHTML = vtToggle.innerHTML === 'VT ◎' ? 'VT ◉' : 'VT ◎';
+	updateTimeHistory();
+});
 
 let correctPattern = [];
 let playerPattern = [];
@@ -168,7 +219,15 @@ function updateTimeHistory() {
 	const times = history[gridSize] || [];
 	const PR = Math.min(...times.map(t => t.time || t));
 
-	times.forEach((entry, index) => {
+	// Sort times based on ttToggle state
+	let sortedTimes = [...times];
+	if (ttToggle.innerHTML === 'TT ↓') {
+		sortedTimes.sort((a, b) => (a.time || a) - (b.time || b));
+	} else {
+		sortedTimes.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+	}
+
+	sortedTimes.forEach((entry, index) => {
 		const time = typeof entry === 'object' ? entry.time : entry;
 		const timeEntry = document.createElement('div');
 		const isPR = !times.slice(index + 1).some(t => (t.time || t) <= time);
@@ -421,7 +480,8 @@ function addTimeToHistory(seconds) {
 	history[gridSize].unshift({
 		time: parseFloat(seconds),
 		pattern: [...correctPattern],
-		patternViewTime: (window.patternViewTime || 0).toFixed(2)
+		patternViewTime: (window.patternViewTime || 0).toFixed(2),
+		timestamp: Date.now()
 	});
 	localStorage.setItem('quickClickHistory', JSON.stringify(history));
 	updateTimeHistory();
