@@ -174,56 +174,100 @@ function updateTimeHistory() {
 		const isTied = false;
 		const isWithin10Percent = time <= PR * 1.1;
 		
+		timeEntry.className = 'mb-2 transition-all duration-200';
+		let badgeHtml = '';
+		
 		if (isPR) {
 			if(time === Math.min(...times.map(t => t.time || t))) {
-				timeEntry.className = 'text-green-600 font-bold mb-2';
-				timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-green-100 text-green-800 px-2 py-0.5 rounded">PR 👑</span>`;
+				badgeHtml = `<span class="ml-2 text-sm bg-green-100 text-green-800 px-2 py-0.5 rounded">PR 👑</span>`;
+				timeEntry.classList.add('text-green-600', 'font-bold');
 			} else {
-				timeEntry.className = 'text-blue-600 font-bold mb-2';
-				timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Imp.</span>`;
+				badgeHtml = `<span class="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Imp.</span>`;
+				timeEntry.classList.add('text-blue-600', 'font-bold');
 			}
 		} else if (isTied) {
-			timeEntry.className = 'text-yellow-600 font-bold mb-2';
-			timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">=</span>`;
+			badgeHtml = `<span class="ml-2 text-sm bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">=</span>`;
+			timeEntry.classList.add('text-yellow-600', 'font-bold');
 		} else if (isWithin10Percent) {
 			const diff = (time - PR).toFixed(2);
-			timeEntry.className = 'text-yellow-600 font-bold mb-2';
-			timeEntry.innerHTML = `${time}s <span class="ml-2 text-sm bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">${PR != Infinity ? '+'+diff : ''}</span>`;
+			badgeHtml = `<span class="ml-2 text-sm bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">${PR != Infinity ? '+'+diff : ''}</span>`;
+			timeEntry.classList.add('text-yellow-600', 'font-bold');
 		} else {
-			timeEntry.className = 'text-slate-700 font-bold mb-2';
-			timeEntry.textContent = `${time}s`;
+			timeEntry.classList.add('text-slate-700', 'font-bold');
 		}
 
-		timeEntry.innerHTML = `<span class="p-0 text-sm text-slate-300 hover:text-slate-700 transition-all cursor-pointer hover:scale-110 px-2 py-0.5 rounded">⠟</span>` + timeEntry.innerHTML;
-		timeHistory.appendChild(timeEntry);
+		const mainContent = document.createElement('div');
+		mainContent.className = 'flex items-center';
+		mainContent.innerHTML = `
+			<span id="detail-toggle" class="p-0 text-sm text-slate-300 hover:text-slate-700 transition-all cursor-pointer hover:scale-110 px-2 py-0.5 rounded">⠟</span>
+			<span>${time}s</span>
+			${badgeHtml}
+		`;
+		timeEntry.appendChild(mainContent);
 
-		const patternBtn = timeEntry.querySelector('span:last-child');
 		if (entry.pattern && entry.pattern.length > 0) {
-			const popup = document.createElement('div');
-			popup.className = 'hidden absolute bg-white p-2 rounded shadow-lg';
-			popup.style.transform = 'translate(-50%, -100%)';
-			popup.style.left = '50%';
-			popup.style.top = '-8px';
+			const detailView = document.createElement('div');
+			detailView.className = 'mt-1 bg-slate-100 rounded overflow-hidden transition-all duration-300 ease-in-out';
+			detailView.style.maxHeight = '0';
+			detailView.style.opacity = '0';
+			detailView.style.marginBottom = '0';
 			
 			const grid = document.createElement('div');
-			grid.className = `grid grid-cols-${gridSize} gap-1`;
+			grid.className = `grid grid-cols-${gridSize} gap-1 p-2`;
 			grid.style.width = '120px';
+			grid.style.margin = '0 auto';
+			grid.style.transform = 'translateY(-20px)';
+			grid.style.transition = 'transform 300ms ease-in-out';
 			
 			for (let i = 0; i < gridSize * gridSize; i++) {
 				const cell = document.createElement('div');
-				cell.className = 'aspect-square bg-slate-100 rounded';
+				cell.className = 'aspect-square rounded';
 				if (entry.pattern.includes(i)) {
 					cell.className += ' bg-indigo-500';
+				} else {
+					cell.className += ' bg-slate-200';
 				}
 				grid.appendChild(cell);
 			}
 			
-			popup.appendChild(grid);
-			patternBtn.appendChild(popup);
+			if (entry.patternViewTime) {
+				const viewTime = document.createElement('div');
+				viewTime.className = 'text-sm text-slate-600 text-center mt-2';
+				viewTime.textContent = `View time: ${entry.patternViewTime}s`;
+				viewTime.style.transform = 'translateY(-20px)';
+				viewTime.style.transition = 'transform 300ms ease-in-out';
+				detailView.appendChild(viewTime);
+			}
 			
-			patternBtn.addEventListener('mouseenter', () => popup.classList.remove('hidden'));
-			patternBtn.addEventListener('mouseleave', () => popup.classList.add('hidden'));
+			detailView.appendChild(grid);
+			timeEntry.appendChild(detailView);
+
+			const toggleBtn = mainContent.querySelector('#detail-toggle');
+			toggleBtn.addEventListener('click', () => {
+				const isExpanded = detailView.style.maxHeight !== '0px';
+				if (isExpanded) {
+					detailView.style.maxHeight = '0';
+					detailView.style.opacity = '0';
+					detailView.style.marginBottom = '0';
+					grid.style.transform = 'translateY(-20px)';
+					if (entry.patternViewTime) {
+						detailView.querySelector('.text-slate-600').style.transform = 'translateY(-20px)';
+					}
+					toggleBtn.textContent = '⠟';
+				} else {
+					detailView.style.maxHeight = '200px';
+					detailView.style.opacity = '1';
+					detailView.style.marginBottom = '1rem';
+					grid.style.transform = 'translateY(0)';
+					if (entry.patternViewTime) {
+						detailView.querySelector('.text-slate-600').style.transform = 'translateY(0)';
+					}
+					toggleBtn.textContent = '⠴';
+				}
+			});
 		}
+
+		timeHistory.appendChild(timeEntry);
 	});
 
 	prTime.textContent = `PR: ${PR != Infinity ? PR + 's' : '-'}`;
