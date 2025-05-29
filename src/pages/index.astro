@@ -84,7 +84,7 @@ import "../styles/global.css";
 			<div class="w-fit min-w-[150px] h-[300px] bg-white rounded-lg shadow-lg flex flex-col">
 				<div class="bg-indigo-100 p-4 rounded-t-lg">
 					<h2 id="round_time" class="text-xl font-bold text-slate-700">-</h2>
-					<h3 id="pr_time" class="text-sm font-bold text-slate-400">PR: -</h3>
+					<h3 id="pr_time" class="text-sm font-bold text-slate-400 cursor-pointer hover:text-slate-700 transition-all">PR: -</h3>
 					<div class="flex gap-x-1">
 						<div class="mt-1"><span id="tt-toggle" class="bg-indigo-200 p-1 rounded-md cursor-pointer hover:bg-indigo-200 hover:border-indigo-300 hover:border-2 transition-all hover:p-2 font-bold text-slate-500 text-xs">TT 𝍌</span></div>
 						<div class="mt-1"><span id="vt-toggle" class="bg-indigo-200 p-1 rounded-md cursor-pointer hover:bg-indigo-200 hover:border-indigo-300 hover:border-2 transition-all hover:p-2 font-bold text-slate-500 text-xs">VT ◎</span></div>
@@ -128,6 +128,30 @@ exportData.addEventListener('click', () => {
 		navigator.clipboard.writeText(str_spaces_b64);
 	});
 });
+
+prTime.addEventListener('click', () => {
+
+	const gridSizes = [3, 4, 5, 6];
+	const bestTimes = gridSizes.reduce((acc, size) => {
+		acc[size] = history[size].sort((a, b) => a.time - b.time)[0];
+		return acc;
+	}, {});
+
+	const text = gridSizes
+		.map(size => `${size}x${size}: ${bestTimes[size]?.time || '-'}`)
+		.join('\n');
+
+	// Copy to clipboard
+	navigator.clipboard.writeText(text);
+
+	// Visual feedback
+	const originalText = prTime.textContent;
+	prTime.textContent = 'Copied!';
+	setTimeout(() => {
+		prTime.textContent = originalText;
+	}, 500);
+});
+
 
 importData.addEventListener('click', () => {
 	const input = prompt('Enter the data to import');
