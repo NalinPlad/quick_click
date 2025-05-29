@@ -262,6 +262,7 @@ function updateTimeHistory() {
 			<span id="detail-toggle" class="p-0 text-sm text-slate-300 hover:text-slate-700 transition-all cursor-pointer hover:scale-110 px-2 py-0.5 rounded">⠟</span>
 			<span>${time}s</span>
 			${badgeHtml}
+			${(entry.patternViewTime && vtToggle.innerHTML != 'VT ◎') ? `<span class="text-slate-300 ml-2 bg-slate-100 text-slate-200 px-2 py-0.5 rounded text-sm">${entry.patternViewTime}s</span>` : ''}
 		`;
 		timeEntry.appendChild(mainContent);
 
