@@ -123,7 +123,7 @@ exportData.addEventListener('click', () => {
 		const str_spaces = compressed.join(' ');
 		const str_spaces_b64 = btoa(str_spaces);
 		console.log(str_spaces_b64);
-		alert("copied to clipboard and printed to console");
+		alert("Copied to clipboard and printed to console");
 		// copy to clipboard
 		navigator.clipboard.writeText(str_spaces_b64);
 	});
@@ -138,7 +138,7 @@ prTime.addEventListener('click', () => {
 	}, {});
 
 	const text = gridSizes
-		.map(size => `${size}x${size}: ${bestTimes[size]?.time || '-'}`)
+		.map(size => `${size}x${size}: ${bestTimes[size]?.time || '-'}s`)
 		.join('\n');
 
 	// Copy to clipboard
